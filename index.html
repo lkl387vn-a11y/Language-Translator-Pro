@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="vi">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Translator Pro</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='galaxy' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b6b;stop-opacity:1' /%3E%3Cstop offset='30%25' style='stop-color:%23667eea;stop-opacity:1' /%3E%3Cstop offset='70%25' style='stop-color:%23764ba2;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23000033;stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='url(%23galaxy)' stroke='%23ffffff' stroke-width='2'/%3E%3Cellipse cx='50' cy='50' rx='35' ry='15' fill='none' stroke='%23ffffff' stroke-width='1.5' opacity='0.8'/%3E%3Cellipse cx='50' cy='50' rx='25' ry='10' fill='none' stroke='%23ffff99' stroke-width='1' opacity='0.6'/%3E%3Ccircle cx='35' cy='35' r='1.5' fill='%23ffffff'/%3E%3Ccircle cx='65' cy='40' r='1' fill='%23ffff99'/%3E%3Ccircle cx='45' cy='65' r='1.2' fill='%23ffffff'/%3E%3Ccircle cx='60' cy='60' r='0.8' fill='%23ff6b6b'/%3E%3Ccircle cx='40' cy='45' r='1' fill='%23667eea'/%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html,body{height:100%;margin:0}
+    body{font-family:Inter,ui-sans-serif,system-ui,Arial;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-font-smoothing:antialiased}
+    .glass{backdrop-filter:blur(8px);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+    .modal-backdrop{background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+    .muted{color:rgba(255,255,255,.8)}
+    .toast{position:fixed;top:16px;right:16px;padding:10px 14px;border-radius:8px;color:white;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+    .chat-msg.self{background:rgba(255,255,255,.06);padding:8px;border-radius:8px}
+    .clickable{cursor:pointer}
+    /* toast colors */
+    .toast.success{background:#16a34a}
+    .toast.error{background:#dc2626}
+    .toast.info{background:#2563eb}
+  </style>
+ </head>
+ <body class="min-h-screen">
+  <!-- Login Modal -->
+  <div id="login-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+   <div class="glass rounded-2xl p-8 w-full max-w-md mx-4">
+    <div id="login-form">
+     <h2 class="text-2xl font-bold text-white mb-4 text-center">Đăng nhập</h2>
+     <div class="space-y-3">
+      <div><label class="block text-white font-medium mb-1">Tên đăng nhập</label><input id="login-username" type="text" class="w-full p-3 rounded-lg border-0 bg-white/90 text-gray-800" placeholder="Nhập tên đăng nhập"></div>
+      <div><label class="block text-white font-medium mb-1">Mật khẩu</label><input id="login-password" type="password" class="w-full p-3 rounded-lg border-0 bg-white/90 text-gray-800" placeholder="Nhập mật khẩu"></div>
+      <div class="flex items-center"><input id="login-captcha" type="checkbox" class="w-5 h-5 mr-3"><label class="text-gray-800 font-medium">Tôi không phải là robot</label></div>
+      <div id="login-captcha-challenge" class="hidden">
+        <div class="text-sm text-gray-700 mb-2 font-medium">Chọn tất cả hình có <span id="login-challenge-type" class="font-bold text-blue-600"></span>:</div>
+        <div id="login-captcha-grid" class="grid grid-cols-3 gap-1"></div>
+        <button id="login-verify-btn" class="mt-2 w-full bg-blue-600 text-white py-1 rounded">Xác minh</button>
+      </div>
+      <div class="flex gap-2">
+        <button id="login-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg disabled:opacity-50" disabled>Đăng nhập</button>
+        <button id="show-register-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg">Đăng ký</button>
+      </div>
+      <div class="text-center mt-2"><button id="forgot-password-btn" class="text-sm text-white/80">Quên mật khẩu?</button></div>
+      <div id="login-error" class="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white text-sm hidden"></div>
+     </div>
+    </div>
+    <div id="register-form" class="hidden">
+     <h2 class="text-2xl font-bold text-white mb-4 text-center">Đăng ký tài khoản</h2>
+     <div class="space-y-3">
+      <div><label class="block text-white font-medium mb-1">Tên đăng nhập</label><input id="register-username" type="text" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Chọn tên đăng nhập"></div>
+      <div><label class="block text-white font-medium mb-1">Email</label><input id="register-email" type="email" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Nhập email"></div>
+      <div><label class="block text-white font-medium mb-1">Mật khẩu</label><input id="register-password" type="password" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Tạo mật khẩu"></div>
+      <div class="flex items-center"><input id="register-captcha" type="checkbox" class="w-5 h-5 mr-3"><label class="text-gray-800 font-medium">Tôi không phải là robot</label></div>
+      <div id="register-captcha-challenge" class="hidden">
+        <div class="text-sm text-gray-700 mb-2 font-medium">Chọn tất cả hình có <span id="register-challenge-type" class="font-bold text-blue-600"></span>:</div>
+        <div id="register-captcha-grid" class="grid grid-cols-3 gap-1"></div>
+        <button id="register-verify-btn" class="mt-2 w-full bg-blue-600 text-white py-1 rounded">Xác minh</button>
+      </div>
+      <div class="flex gap-2">
+        <button id="register-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg disabled:opacity-50" disabled>Đăng ký</button>
+        <button id="show-login-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg">Quay lại</button>
+      </div>
+      <div id="register-error" class="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white text-sm hidden"></div>
+     </div>
+    </div>
+    <div id="forgot-password-form" class="hidden">
+     <h2 class="text-2xl font-bold text-white mb-4 text-center">Khôi phục mật khẩu</h2>
+     <div class="space-y-3">
+      <div id="forgot-username-section"><label class="block text-white font-medium mb-1">Tên đăng nhập</label><input id="forgot-username" type="text" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Nhập tên đăng nhập"></div>
+      <div id="reset-password-section" class="hidden"><label class="block text-white font-medium mb-1">Mật khẩu mới</label><input id="new-password" type="password" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Nhập mật khẩu mới"><label class="block text-white font-medium mb-1 mt-2">Xác nhận mật khẩu</label><input id="confirm-new-password" type="password" class="w-full p-3 rounded-lg bg-white/90 text-gray-800" placeholder="Nhập lại mật khẩu mới"></div>
+      <div class="flex gap-2 mt-2">
+        <button id="send-reset-btn" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg">Gửi email khôi phục</button>
+        <button id="reset-password-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg hidden">Đổi mật khẩu</button>
+      </div>
+      <div class="flex gap-2 mt-2"><button id="back-to-login-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg">Quay lại đăng nhập</button></div>
+      <div id="forgot-error" class="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white text-sm hidden"></div>
+      <div id="forgot-success" class="mt-3 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-white text-sm hidden"></div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="main-app" class="hidden min-h-screen">
+   <main class="container mx-auto px-4 py-8 min-h-screen">
+    <header class="flex justify-between items-center mb-8">
+     <div>
+      <h1 id="app-title" class="text-4xl font-bold text-white mb-2">Language Translator Pro</h1>
+      <p class="text-white/80 text-lg">Dịch văn bản giữa các ngôn ngữ khác nhau</p>
+     </div>
+     <div class="text-right">
+      <div class="glass rounded-lg p-4">
+       <div class="text-white font-medium">Xin chào, <span id="user-name"></span>!</div>
+       <div id="user-status" class="text-sm text-white/80"></div>
+       <div class="mt-2 space-x-2">
+        <button id="chat-server-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">💬 Chat Server</button>
+        <button id="email-notifications-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">📧 Email</button>
+        <button id="upgrade-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">Nâng cấp Premium</button>
+        <button id="admin-panel-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm hidden">👑 Quản lý</button>
+        <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">Đăng xuất</button>
+       </div>
+      </div>
+     </div>
+    </header>
+
+    <div class="flex justify-center">
+     <div class="w-full max-w-4xl">
+      <div class="glass rounded-2xl p-8 translate-animation">
+       <div class="flex items-center justify-between mb-6 gap-4">
+        <div class="flex-1">
+          <label for="source-lang" class="block text-white font-medium mb-2">Từ</label>
+          <select id="source-lang" class="w-full p-3 rounded-lg bg-white/90 text-gray-800">
+            <option value="auto">Tự động phát hiện</option>
+            <optgroup label="🌟 Phổ biến">
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="zh">中文 (Chinese)</option>
+              <option value="ja">日本語 (Japanese)</option>
+            </optgroup>
+          </select>
+        </div>
+        <button id="swap-btn" class="mt-6 p-3 bg-white/20 rounded-full text-white text-xl">⇄</button>
+        <div class="flex-1">
+          <label for="target-lang" class="block text-white font-medium mb-2">Sang</label>
+          <select id="target-lang" class="w-full p-3 rounded-lg bg-white/90 text-gray-800">
+            <optgroup label="🌟 Phổ biến">
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="zh">中文 (Chinese)</option>
+              <option value="ja">日本語 (Japanese)</option>
+            </optgroup>
+          </select>
+        </div>
+       </div>
+
+       <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="source-text" class="block text-white font-medium mb-2">Nhập văn bản cần dịch</label>
+          <textarea id="source-text" placeholder="Nhập văn bản của bạn tại đây..." class="w-full h-32 p-4 rounded-lg bg-white/90 text-gray-800 resize-none"></textarea>
+          <div class="flex justify-between mt-1">
+            <span id="word-count" class="text-white/70 text-sm">0 từ</span>
+            <span id="char-count" class="text-white/70 text-sm">0 / 5000</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-white font-medium mb-2">Bản dịch</label>
+          <div id="translation-output" class="w-full h-32 p-4 rounded-lg bg-white/70 text-gray-800 overflow-y-auto border-2 border-dashed border-white/30"><span class="text-gray-500 italic">Bản dịch sẽ xuất hiện ở đây...</span></div>
+          <div class="text-right mt-1"><button id="copy-btn" class="text-white/70 hover:text-white text-sm transition-colors opacity-0" disabled>📋 Sao chép bản dịch</button></div>
+        </div>
+       </div>
+
+       <div id="usage-warning" class="mb-4 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg hidden">
+        <p class="text-white text-sm text-center"><strong>Giới hạn dùng thử:</strong> <span id="usage-text"></span></p>
+       </div>
+
+       <div class="text-center"><button id="translate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg">Dịch</button></div>
+      </div>
+     </div>
+    </div>
+   </main>
+  </div>
+
+  <!-- Chat Modal -->
+  <div id="chat-server-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+   <div class="glass rounded-2xl p-6 w-full max-w-6xl mx-4 max-h-[90%] overflow-hidden flex flex-col">
+    <div class="flex justify-between items-center mb-4">
+     <h2 class="text-2xl font-bold text-white">💬 Chat Server</h2>
+     <button id="close-chat-btn" class="text-white text-2xl font-bold">×</button>
+    </div>
+    <div class="flex flex-1 gap-4 min-h-0">
+     <div class="flex-1 flex flex-col min-h-0">
+      <div id="chat-messages" class="flex-1 bg-white/10 rounded-lg p-4 overflow-y-auto mb-4 min-h-0"></div>
+      <div class="flex gap-2">
+       <input id="chat-input" type="text" placeholder="Nhập tin nhắn..." maxlength="500" class="flex-1 p-3 rounded-lg bg-white/90 text-gray-800">
+       <button id="send-message-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">Gửi</button>
+      </div>
+      <div class="text-right mt-1"><span id="message-count" class="text-white/70 text-sm">0 / 500</span></div>
+     </div>
+     <div class="w-80 bg-white/10 rounded-lg p-4 flex flex-col">
+      <div class="mb-4 pb-3 border-b border-white/20">
+       <h4 class="text-sm font-bold text-white mb-2 flex items-center">🌐 Tự động dịch tin nhắn</h4>
+       <select id="chat-translate-lang" class="w-full p-2 rounded bg-white/90 text-gray-800 text-sm">
+         <option value="off">Tắt tự động dịch</option>
+         <option value="vi">Tiếng Việt</option>
+         <option value="en">English</option>
+       </select>
+       <div class="text-white/60 text-xs mt-1">Tin nhắn sẽ được dịch sang ngôn ngữ bạn chọn</div>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-3 flex items-center">🟢 Người dùng online <span id="online-count" class="ml-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs">0</span></h3>
+      <div id="online-users-list" class="flex-1 space-y-2 overflow-y-auto"></div>
+      <div class="mt-4 pt-3 border-t border-white/20"><div class="text-white/70 text-xs text-center">Cập nhật mỗi 10 giây</div></div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Admin Panel (hidden by default) -->
+  <div id="admin-panel-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+   <div class="glass rounded-2xl p-8 w-full max-w-4xl mx-4 max-h-[90%] overflow-y-auto">
+    <h2 class="text-3xl font-bold text-yellow-300 mb-6 text-center">👑 BẢNG ĐIỀU KHIỂN ADMIN</h2>
+    <div class="flex space-x-4 mb-6 border-b border-yellow-300/30">
+      <button id="tab-users" class="px-4 py-2 text-yellow-300 border-b-2 border-yellow-300 font-medium">Quản lý Users</button>
+      <button id="tab-create-user" class="px-4 py-2 text-white/70 hover:text-white font-medium">Tạo tài khoản</button>
+      <button id="tab-system" class="px-4 py-2 text-white/70 hover:text-white font-medium">Hệ thống</button>
+    </div>
+    <div id="users-tab" class="tab-content">
+      <div class="mb-4"><input id="search-users" type="text" placeholder="🔍 Tìm kiếm người dùng..." class="w-full p-3 rounded-lg bg-white/90 text-gray-800"></div>
+      <div id="users-list" class="space-y-3 max-h-96 overflow-y-auto"></div>
+    </div>
+    <div id="create-user-tab" class="tab-content hidden">
+      <div class="bg-white/10 rounded-lg p-6">
+        <h3 class="text-xl font-bold text-white mb-4">Tạo tài khoản mới (Admin)</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div><label class="block text-white font-medium mb-2">Tên đăng nhập</label><input id="admin-create-username" type="text" class="w-full p-3 rounded-lg bg-white/90 text-gray-800"></div>
+          <div><label class="block text-white font-medium mb-2">Email</label><input id="admin-create-email" type="email" class="w-full p-3 rounded-lg bg-white/90 text-gray-800"></div>
+          <div><label class="block text-white font-medium mb-2">Mật khẩu</label><input id="admin-create-password" type="password" class="w-full p-3 rounded-lg bg-white/90 text-gray-800"></div>
+          <div><label class="block text-white font-medium mb-2">Quyền hạn</label><select id="admin-create-role" class="w-full p-3 rounded-lg bg-white/90 text-gray-800"><option value="free">Dùng thử miễn phí</option><option value="premium">Premium</option></select></div>
+        </div>
+        <button id="admin-create-btn" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg">Tạo tài khoản</button>
+      </div>
+    </div>
+    <div id="system-tab" class="tab-content hidden">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white/10 rounded-lg p-4">
+          <h3 class="text-lg font-bold text-white mb-2">📊 Thống kê hệ thống</h3>
+          <div class="space-y-2 text-white/90">
+            <div>Tổng người dùng: <span id="total-users">0</span></div>
+            <div>Premium users: <span id="premium-users">0</span></div>
+            <div>Banned users: <span id="banned-users">0</span></div>
+          </div>
+        </div>
+        <div class="bg-white/10 rounded-lg p-4">
+          <h3 class="text-lg font-bold text-white mb-2">⚙️ Cài đặt</h3>
+          <div class="space-y-2"><button id="refresh-data-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">🔄 Làm mới dữ liệu</button><button id="export-data-btn" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">📥 Xuất dữ liệu</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-6"><button id="close-admin-panel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg">Đóng</button></div>
+   </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="global-toast" class="hidden"></div>
+
+  <script>
+    /**************************************************************************
+     * Language Translator Pro - Single HTML full app
+     * - Reconstructed from your script parts
+     * - Features:
+     *   • Login/Register/Forgot password (localStorage)
+     *   • Simulated reCAPTCHA (emoji/grid)
+     *   • Translation via MyMemory API
+     *   • Chat (localStorage), Email notifications (localStorage)
+     *   • Admin panel (admin: lamgamepro_lklz / 0961713265)
+     *   • URL routing with history: //login and //nick/<username>
+     *   • Anti-hack: Detect DevTools/contextmenu/shortcuts, toggleable by 'T'
+     *
+     * Usage: save as index.html and open in browser.
+     **************************************************************************/
+
+    // ------------- Config & Globals -------------
+    const ADMIN_USERNAME = "lamgamepro_lklz";
+    const ADMIN_PASSWORD = "0961713265";
+    const FREE_WORD_LIMIT = 10;
+
+    // Storage keys
+    const KEY_USERS = "ltp_users";
+    const KEY_MSGS = "ltp_msgs";
+    const KEY_EMAILS = "ltp_mails";
+    const KEY_LOGIN_USER = "ltp_login_user";
+
+    // App state
+    let users = [];
+    let chatMessages = [];
+    let activityLogs = [];
+    let emails = [];
+    let currentUser = null;
+    let chatAutoTranslate = 'off';
+    let antiHackEnabled = true; // toggleable by T
+
+    // Utility helpers
+    const $ = id => document.getElementById(id);
+    function nowISO(){ return new Date().toISOString(); }
+    function toast(msg, type='info', t=2500){
+      const container = document.createElement('div');
+      container.className = 'toast ' + (type==='success'?'success':type==='error'?'error':'info');
+      container.textContent = msg;
+      document.body.appendChild(container);
+      setTimeout(()=>container.remove(), t);
+    }
+    function save(key, data){ localStorage.setItem(key, JSON.stringify(data)); }
+    function load(key, def=[]){ try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); } catch(e){ return def; } }
+
+    // Initialize data from storage
+    function initData(){
+      users = load(KEY_USERS, []);
+      chatMessages = load(KEY_MSGS, []);
+      emails = load(KEY_EMAILS, []);
+      // ensure admin
+      if (!users.find(u => u.username === ADMIN_USERNAME)){
+        users.push({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD, email: "lkl387vn@gmail.com", isAdmin:true, isPremium:true, isBanned:false, dailyUsage:0, lastSeen: nowISO() });
+        save(KEY_USERS, users);
+      } else {
+        save(KEY_USERS, users);
+      }
+    }
+
+    initData();
+
+    // ------------- URL routing helpers -------------
+    function setURL(path){
+      // normalize and set to //path
+      const normalized = '//' + path.replace(/^\/+/, '');
+      history.pushState({}, '', normalized);
+    }
+    function replaceURL(path){
+      const normalized = '//' + path.replace(/^\/+/, '');
+      history.replaceState({}, '', normalized);
+    }
+    function parseRoute(){
+      let p = location.href.replace(location.origin, '') || '/';
+      if (p.startsWith('//')) p = p.slice(2);
+      if (p.startsWith('/')) p = p.slice(1);
+      const parts = p.split('/').filter(Boolean);
+      return parts;
+    }
+
+    // ------------- reCAPTCHA (emoji grid) -------------
+    const captchaChallenges = {
+      'xe hơi': ['🚗','🚙','🚕','🚐','🏎️','🚓','🚑','🚒','🚌'],
+      'động vật': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨'],
+      'thức ăn': ['🍎','🍌','🍊','🍓','🥕','🍕','🍔','🍟','🌭'],
+      'phương tiện': ['✈️','🚁','🚂','🚢','🚲','🏍️','🛵','🚤','⛵'],
+      'hoa quả': ['🍎','🍌','🍊','🍓','🥝','🍇','🍑','🥭','🍍']
+    };
+    function generateCaptcha(){
+      const types = Object.keys(captchaChallenges);
+      const type = types[Math.floor(Math.random()*types.length)];
+      const correctPool = captchaChallenges[type];
+      const allEmojis = ['🚗','🚙','🚕','🐶','🐱','🐭','🍎','🍌','🍊','✈️','🚁','🚂','🌸','🌺','🌻','⚽','🏀','🎾','📱','💻','⌚','🏠','🏢','🏰'];
+      const items = [];
+      const correctCount = Math.floor(Math.random()*3)+2; // 2-4 correct
+      for (let i=0;i<correctCount;i++){
+        items.push({ emoji: correctPool[Math.floor(Math.random()*correctPool.length)], correct:true });
+      }
+      while (items.length<9){
+        const e = allEmojis[Math.floor(Math.random()*allEmojis.length)];
+        if (!correctPool.includes(e)) items.push({ emoji:e, correct:false });
+      }
+      // shuffle
+      for (let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; }
+      return { type, items };
+    }
+
+    function showCaptchaFor(formType){
+      const challenge = generateCaptcha();
+      const challengeDiv = $(formType + '-captcha-challenge');
+      const typeSpan = $(formType + '-challenge-type');
+      const grid = $(formType + '-captcha-grid');
+      typeSpan.textContent = challenge.type;
+      challengeDiv.classList.remove('hidden');
+      grid.innerHTML = '';
+      challenge.items.forEach(it => {
+        const btn = document.createElement('div');
+        btn.className = 'w-16 h-16 bg-gray-100 border-2 border-gray-300 rounded flex items-center justify-center text-2xl cursor-pointer';
+        btn.textContent = it.emoji;
+        btn.dataset.correct = it.correct;
+        btn.dataset.selected = 'false';
+        btn.addEventListener('click', function(){
+          if (this.dataset.selected==='false'){ this.dataset.selected='true'; this.classList.add('bg-blue-200','border-blue-500'); }
+          else { this.dataset.selected='false'; this.classList.remove('bg-blue-200','border-blue-500'); }
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function verifyCaptcha(formType){
+      const grid = $(formType + '-captcha-grid');
+      const items = grid.children;
+      let correctSelections = 0, incorrectSelections=0, totalCorrect=0;
+      for (const it of items){
+        const isCorrect = it.dataset.correct === 'true';
+        const isSelected = it.dataset.selected === 'true';
+        if (isCorrect) totalCorrect++;
+        if (isSelected && isCorrect) correctSelections++;
+        if (isSelected && !isCorrect) incorrectSelections++;
+      }
+      const isValid = (correctSelections===totalCorrect && incorrectSelections===0);
+      if (isValid){
+        if (formType==='login'){ window.loginCaptchaVerified=true; $('login-btn').disabled=false; }
+        else { window.registerCaptchaVerified=true; $('register-btn').disabled=false; }
+        const challengeDiv = $(formType + '-captcha-challenge');
+        challengeDiv.innerHTML = '<div class="text-green-600 text-center font-medium">✓ Xác minh thành công!</div>';
+        document.getElementById(formType + '-captcha').checked = true;
+        document.getElementById(formType + '-captcha').disabled = true;
+      } else {
+        toast('Xác minh không đúng. Vui lòng thử lại!', 'error');
+        setTimeout(()=>showCaptchaFor(formType), 900);
+      }
+    }
+
+    // ------------- Anti-hack (toggle with T) -------------
+    window._antiState = { listeners: [], intervalId: null };
+    function antiToast(msg){ toast(msg, 'info', 1400); }
+    function antiCheck(){
+      if (!antiHackEnabled) return;
+      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+      if (widthDiff > 160 || heightDiff > 160){
+        antiToast('❌ Phát hiện DevTools - trang sẽ reload');
+        setTimeout(()=>location.reload(), 900);
+      }
+    }
+    function startAnti(){
+      stopAnti();
+      _antiState.intervalId = setInterval(antiCheck, 1500);
+      const onContext = e=>{ if (!antiHackEnabled) return; e.preventDefault(); antiToast('Chuột phải bị vô hiệu hóa'); };
+      document.addEventListener('contextmenu', onContext);
+      _antiState.listeners.push(['contextmenu', onContext, document]);
+      const onKey = e=>{ if (!antiHackEnabled) return; const k=e.key||''; if (k==='F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(k.toUpperCase())) || (e.ctrlKey && (k==='u' || k==='U'))){ e.preventDefault(); antiToast('Phím DevTools bị chặn'); setTimeout(()=>location.reload(),700); } };
+      document.addEventListener('keydown', onKey);
+      _antiState.listeners.push(['keydown', onKey, document]);
+    }
+    function stopAnti(){
+      if (_antiState.intervalId) clearInterval(_antiState.intervalId);
+      _antiState.intervalId = null;
+      for (const [evt, fn, target] of _antiState.listeners){ try{ target.removeEventListener(evt, fn); } catch(e){} }
+      _antiState.listeners = [];
+    }
+    function toggleAntiHack(){
+      antiHackEnabled = !antiHackEnabled;
+      if (antiHackEnabled){ startAnti(); antiToast('🔐 Anti-hack: BẬT'); } else { stopAnti(); antiToast('🔓 Anti-hack: TẮT'); }
+    }
+    document.addEventListener('keydown', function(e){
+      try{
+        if ((e.key||'').toLowerCase() === 't'){
+          const active = document.activeElement;
+          if (active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA' || active.isContentEditable)) return;
+          toggleAntiHack();
+        }
+      } catch(err){}
+    });
+    // start anti at load
+    startAnti();
+
+    // ------------- UI & Handlers -------------
+    // DOM refs
+    const loginModal = $('login-modal');
+    const loginForm = $('login-form');
+    const registerForm = $('register-form');
+    const forgotForm = $('forgot-password-form');
+    const mainApp = $('main-app');
+
+    // Buttons & elements (some are referenced later; to avoid undefined use helpers)
+    const loginBtnEl = $('login-btn');
+    const registerBtnEl = $('register-btn');
+    const loginCaptchaEl = $('login-captcha');
+    const registerCaptchaEl = $('register-captcha');
+
+    // ensure these flags exist
+    window.loginCaptchaVerified = false;
+    window.registerCaptchaVerified = false;
+
+    // Show initial login modal or auto-login if saved
+    function showLoginModal(){
+      loginModal.classList.remove('hidden');
+      mainApp.classList.add('hidden');
+      replaceURL('login'); // force url to //login
+    }
+
+    function showMainApp(){
+      loginModal.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+      // display username/status
+      if (currentUser){
+        $('user-name').textContent = currentUser.username;
+        if (currentUser.isAdmin){ $('user-status').innerHTML = '<span class="text-yellow-300 font-bold">👑 ADMIN</span>'; $('admin-panel-btn').classList.remove('hidden'); }
+        else if (currentUser.isPremium){ $('user-status').textContent = 'Tài khoản Premium - Không giới hạn'; $('upgrade-btn').style.display='none'; }
+        else { $('user-status').textContent = ''; }
+      }
+      replaceURL('nick/' + encodeURIComponent(currentUser.username));
+    }
+
+    // login handler (with reload users before match)
+    function handleLogin(){
+      users = load(KEY_USERS, []);
+      const username = $('login-username').value.trim();
+      const password = $('login-password').value;
+      const captchaChecked = $('login-captcha').checked;
+      if (!username || !password){ $('login-error').textContent='Vui lòng nhập đầy đủ'; $('login-error').classList.remove('hidden'); return; }
+      if (!captchaChecked){ $('login-error').textContent='Vui lòng xác minh robot'; $('login-error').classList.remove('hidden'); return; }
+      const user = users.find(u => u.username === username && u.password === password);
+      if (!user){ $('login-error').textContent='Tên đăng nhập hoặc mật khẩu không đúng'; $('login-error').classList.remove('hidden'); return; }
+      if (user.isBanned){ $('login-error').textContent=`Tài khoản bị khóa: ${user.banReason||'Vi phạm'}`; $('login-error').classList.remove('hidden'); return; }
+      // success
+      $('login-error').classList.add('hidden');
+      currentUser = user;
+      localStorage.setItem(KEY_LOGIN_USER, username);
+      user.isOnline = true; user.lastSeen = nowISO();
+      save(KEY_USERS, users);
+      showMainApp();
+      toast('Đăng nhập thành công', 'success');
+    }
+
+    // register handler
+    function handleRegister(){
+      users = load(KEY_USERS, []);
+      const u = $('register-username').value.trim();
+      const e = $('register-email').value.trim();
+      const p = $('register-password').value;
+      const captchaChecked = $('register-captcha').checked;
+      if (!u || !e || !p){ $('register-error').textContent='Vui lòng nhập đầy đủ'; $('register-error').classList.remove('hidden'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){ $('register-error').textContent='Email không hợp lệ'; $('register-error').classList.remove('hidden'); return; }
+      if (!captchaChecked){ $('register-error').textContent='Vui lòng xác minh robot'; $('register-error').classList.remove('hidden'); return; }
+      if (users.find(x=>x.username===u)){ $('register-error').textContent='Tên đăng nhập đã tồn tại'; $('register-error').classList.remove('hidden'); return; }
+      if (users.find(x=>x.email===e)){ $('register-error').textContent='Email đã được sử dụng'; $('register-error').classList.remove('hidden'); return; }
+      const newUser = { username:u, email:e, password:p, isPremium:false, isBanned:false, dailyUsage:0, lastUsageDate: nowISO(), registrationDate: nowISO(), isOnline:true, lastSeen: nowISO() };
+      users.push(newUser);
+      save(KEY_USERS, users);
+      emails = load(KEY_EMAILS, []); emails.push({ to:e, subject:'Chào mừng', body:`Xin chào ${u}! Tài khoản đã được tạo (giả lập).`, ts: nowISO() }); save(KEY_EMAILS, emails);
+      $('register-error').classList.add('hidden');
+      // auto login
+      users = load(KEY_USERS, []);
+      const created = users.find(x=>x.username===u);
+      if (created){ currentUser = created; localStorage.setItem(KEY_LOGIN_USER, u); showMainApp(); toast('Đăng ký thành công - đã đăng nhập', 'success'); } else { $('register-error').textContent='Lỗi tạo tài khoản'; $('register-error').classList.remove('hidden'); }
+    }
+
+    // Forgot password handlers
+    function handleSendReset(){
+      const username = $('forgot-username').value.trim();
+      if (!username){ $('forgot-error').textContent='Vui lòng nhập tên đăng nhập'; $('forgot-error').classList.remove('hidden'); return; }
+      users = load(KEY_USERS, []); const user = users.find(u=>u.username===username);
+      if (!user){ $('forgot-error').textContent='Tên đăng nhập không tồn tại'; $('forgot-error').classList.remove('hidden'); return; }
+      const token = 'reset_' + Date.now() + '_' + Math.random().toString(36).slice(2,9);
+      localStorage.setItem(`reset_token_${username}`, token);
+      const link = `${location.origin}${location.pathname}?reset_token=${token}&username=${encodeURIComponent(username)}`;
+      emails = load(KEY_EMAILS, []); emails.push({ to:user.email, subject:'Khôi phục mật khẩu', body:`Liên kết (giả lập): ${link}`, ts: nowISO() }); save(KEY_EMAILS, emails);
+      $('forgot-success').textContent = `Email khôi phục đã gửi tới ${user.email}`;
+      $('forgot-success').classList.remove('hidden'); $('forgot-error').classList.add('hidden');
+      toast('Email khôi phục (giả lập) đã gửi', 'success');
+    }
+
+    function handleResetPassword(){
+      const newPass = $('new-password').value;
+      const confirm = $('confirm-new-password').value;
+      if (!newPass || !confirm){ $('forgot-error').textContent='Vui lòng nhập đầy đủ'; $('forgot-error').classList.remove('hidden'); return; }
+      if (newPass !== confirm){ $('forgot-error').textContent='Mật khẩu xác nhận không khớp'; $('forgot-error').classList.remove('hidden'); return; }
+      const urlParams = new URLSearchParams(location.search);
+      const resetToken = urlParams.get('reset_token'); const username = urlParams.get('username');
+      if (!resetToken || !username){ $('forgot-error').textContent='Link reset không hợp lệ'; $('forgot-error').classList.remove('hidden'); return; }
+      const stored = localStorage.getItem(`reset_token_${username}`);
+      if (stored !== resetToken){ $('forgot-error').textContent='Link đã hết hạn hoặc không hợp lệ'; $('forgot-error').classList.remove('hidden'); return; }
+      users = load(KEY_USERS, []); const u = users.find(x=>x.username===username);
+      if (!u){ $('forgot-error').textContent='Lỗi hệ thống'; $('forgot-error').classList.remove('hidden'); return; }
+      u.password = newPass; save(KEY_USERS, users); localStorage.removeItem(`reset_token_${username}`);
+      emails = load(KEY_EMAILS, []); emails.push({ to:u.email, subject:'Mật khẩu đã thay đổi', body:`Mật khẩu của bạn đã được đổi (giả lập).`, ts: nowISO() }); save(KEY_EMAILS, emails);
+      currentUser = u; localStorage.setItem(KEY_LOGIN_USER, username);
+      toast('Đổi mật khẩu thành công - đã đăng nhập', 'success');
+      showMainApp();
+    }
+
+    // Translate function
+    async function translateWithAPI(text, sourceLang, targetLang){
+      try{
+        const src = sourceLang || 'auto'; const tgt = targetLang || 'en';
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(src+'|'+tgt)}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data && data.responseData && data.responseData.translatedText) return data.responseData.translatedText;
+        return text;
+      }catch(e){ console.error(e); return text; }
+    }
+
+    // Chat functions
+    function renderChat(){
+      const chatContainer = $('chat-messages'); chatContainer.innerHTML = '';
+      const shouldScroll = chatContainer.scrollTop + chatContainer.clientHeight >= (chatContainer.scrollHeight - 50);
+      for (const m of chatMessages){
+        const isOwn = currentUser && m.messageAuthor === currentUser.username;
+        const elWrap = document.createElement('div');
+        elWrap.className = 'mb-2 ' + (isOwn ? 'chat-msg self p-2' : 'p-2');
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-start mb-1';
+        header.innerHTML = `<span class="${isOwn ? 'text-yellow-300' : 'text-white'} clickable">${m.messageAuthor}</span><span class="text-white/50 text-xs">${new Date(m.messageTimestamp).toLocaleTimeString()}</span>`;
+        const body = document.createElement('div'); body.className='text-white text-sm'; body.textContent = m.messageText;
+        elWrap.appendChild(header); elWrap.appendChild(body);
+        chatContainer.appendChild(elWrap);
+      }
+      if (shouldScroll) chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    function sendMessage(){
+      const input = $('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      const msg = { messageId:'m_'+Date.now(), messageText:text, messageAuthor: currentUser.username, messageTimestamp: nowISO() };
+      chatMessages.push(msg); save(KEY_MSGS, chatMessages); input.value=''; renderChat();
+    }
+
+    // Admin functions
+    function updateAdminStats(){
+      const all = users.length; const prem = users.filter(u=>u.isPremium).length; const banned = users.filter(u=>u.isBanned).length;
+      $('total-users').textContent = all; $('premium-users').textContent = prem; $('banned-users').textContent = banned;
+    }
+    function renderUsersList(){
+      const container = $('users-list'); container.innerHTML = '';
+      const search = $('search-users').value.toLowerCase();
+      const filtered = users.filter(u => u.username.toLowerCase().includes(search) || (u.email||'').toLowerCase().includes(search));
+      for (const u of filtered){
+        const card = document.createElement('div'); card.className='bg-white/10 rounded-lg p-4 cursor-pointer'; card.onclick=()=>showUserProfile(u.username);
+        const statusBadge = u.isBanned ? '<span class="bg-red-500 text-white px-2 py-1 rounded text-xs">BANNED</span>' : u.isPremium ? '<span class="bg-yellow-500 text-black px-2 py-1 rounded text-xs">PREMIUM</span>' : '<span class="bg-gray-500 text-white px-2 py-1 rounded text-xs">FREE</span>';
+        const onlineStatus = (u.isOnline && (new Date() - new Date(u.lastSeen) < 1000*60*5)) ? '<span class="bg-green-500 text-white px-2 py-1 rounded text-xs">🟢 ONLINE</span>' : '<span class="bg-gray-500 text-white px-2 py-1 rounded text-xs">⚫ OFFLINE</span>';
+        card.innerHTML = `<div class="flex justify-between items-center"><div><div class="text-white font-medium">${u.username}</div><div class="text-white/70 text-sm">${u.email||''}</div><div class="text-white/50 text-xs">Đăng ký: ${u.registrationDate? new Date(u.registrationDate).toLocaleDateString() : 'N/A'}</div></div><div class="flex flex-col items-end space-y-1"><div class="flex space-x-1">${statusBadge} ${onlineStatus}</div><div class="text-white/60 text-xs">Click để xem chi tiết</div></div></div>`;
+        container.appendChild(card);
+      }
+    }
+
+    // Show user profile modal inside main view (simple)
+    function showUserProfile(username){
+      const u = users.find(x=>x.username===username);
+      if (!u){ toast('Không tìm thấy user','error'); return; }
+      // populate info in a simple alert-style UI (or navigate)
+      const s = `Tài khoản: ${u.username}\nEmail: ${u.email||'(chưa có)'}\nPremium: ${u.isPremium? 'Có' : 'Không' }\nBanned: ${u.isBanned? 'Có' : 'Không' }`;
+      alert(s);
+    }
+
+    // Export data
+    function exportData(){
+      const exportObj = { users, messages: chatMessages, emails, exportTime: nowISO() };
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download = `translator_export_${new Date().toISOString().slice(0,10)}.json`; a.click();
+      toast('Đã xuất dữ liệu','success');
+    }
+
+    // ------------- Event wiring & initial UI -------------
+    // wire captcha checkboxes to show challenge
+    $('login-captcha').addEventListener('change', function(){
+      if (this.checked && !window.loginCaptchaVerified) showCaptchaFor('login');
+      else { window.loginCaptchaVerified=false; $('login-btn').disabled=true; $('login-captcha-challenge').classList.add('hidden'); }
+    });
+    $('register-captcha').addEventListener('change', function(){
+      if (this.checked && !window.registerCaptchaVerified) showCaptchaFor('register');
+      else { window.registerCaptchaVerified=false; $('register-btn').disabled=true; $('register-captcha-challenge').classList.add('hidden'); }
+    });
+    $('login-verify-btn').addEventListener('click', ()=>verifyCaptcha('login'));
+    $('register-verify-btn').addEventListener('click', ()=>verifyCaptcha('register'));
+
+    // Login/register btn handlers
+    $('login-btn').addEventListener('click', handleLogin);
+    $('register-btn').addEventListener('click', handleRegister);
+
+    // show/hide forms buttons
+    $('show-register-btn').addEventListener('click', ()=>{ loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); replaceURL('register'); });
+    $('show-login-btn').addEventListener('click', ()=>{ registerForm.classList.add('hidden'); forgotForm.classList.add('hidden'); loginForm.classList.remove('hidden'); replaceURL('login'); });
+    $('forgot-password-btn').addEventListener('click', ()=>{ loginForm.classList.add('hidden'); registerForm.classList.add('hidden'); forgotForm.classList.remove('hidden'); $('forgot-username').value=''; $('reset-password-section').classList.add('hidden'); $('forgot-username-section').classList.remove('hidden'); });
+
+    // forgot password actions
+    $('send-reset-btn').addEventListener('click', handleSendReset);
+    $('reset-password-btn').addEventListener('click', handleResetPassword);
+    $('back-to-login-btn').addEventListener('click', ()=>{ forgotForm.classList.add('hidden'); loginForm.classList.remove('hidden'); replaceURL('login'); });
+
+    // main app buttons
+    $('logout-btn').addEventListener('click', ()=>{
+      if (currentUser){ currentUser.isOnline=false; const idx=users.findIndex(u=>u.username===currentUser.username); if (idx>=0){ users[idx]=currentUser; save(KEY_USERS, users); } }
+      currentUser = null; localStorage.removeItem(KEY_LOGIN_USER); loginModal.classList.remove('hidden'); mainApp.classList.add('hidden'); replaceURL('login'); toast('Đã đăng xuất','success');
+    });
+
+    // chat modal open/close
+    $('chat-server-btn').addEventListener('click', ()=>{
+      $('chat-server-modal').classList.remove('hidden'); renderChat(); renderOnlineUsers(); $('chat-input').focus();
+    });
+    $('close-chat-btn').addEventListener('click', ()=>{ $('chat-server-modal').classList.add('hidden'); });
+
+    // chat send
+    $('send-message-btn').addEventListener('click', sendMessage);
+    $('chat-input').addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+    // translate button
+    $('translate-btn').addEventListener('click', async ()=>{
+      const text = $('source-text').value.trim(); if (!text) return toast('Nhập văn bản để dịch','error');
+      $('translation-output').innerHTML = '<span class="text-yellow-600 italic">Đang dịch...</span>';
+      const trans = await translateWithAPI(text, $('source-lang').value, $('target-lang').value);
+      $('translation-output').innerHTML = `<span class="text-gray-800">${trans}</span>`;
+      $('copy-btn').style.opacity='1'; $('copy-btn').disabled=false;
+      // update usage for free users
+      if (!currentUser.isAdmin && !currentUser.isPremium){ const uidx = users.findIndex(u=>u.username===currentUser.username); if (uidx>=0){ users[uidx].dailyUsage = (users[uidx].dailyUsage||0)+1; users[uidx].lastUsageDate=nowISO(); save(KEY_USERS, users); const words = text.split(/\s+/).filter(Boolean).length; if (words > FREE_WORD_LIMIT) { $('usage-warning').classList.remove('hidden'); $('usage-text').textContent = `Bạn đang nhập ${words} từ. Dùng thử chỉ cho phép ${FREE_WORD_LIMIT} từ mỗi lần.`; } } }
+    });
+
+    // copy translation
+    $('copy-btn').addEventListener('click', ()=>{ const txt = $('translation-output').textContent; navigator.clipboard.writeText(txt).then(()=>{ toast('Đã sao chép','success'); }); });
+
+    // swap languages
+    $('swap-btn').addEventListener('click', ()=>{
+      if ($('source-lang').value === 'auto') return;
+      const tmp = $('source-lang').value; $('source-lang').value = $('target-lang').value; $('target-lang').value = tmp;
+      $('translation-output').innerHTML = '<span class="text-gray-500 italic">Bản dịch sẽ xuất hiện ở đây...</span>'; $('copy-btn').style.opacity='0'; $('copy-btn').disabled=true;
+    });
+
+    // render online users panel
+    function renderOnlineUsers(){
+      const list = $('online-users-list'); list.innerHTML=''; const displayUsers = users.filter(u=>u.isOnline||u.isAdmin);
+      $('online-count').textContent = displayUsers.length;
+      displayUsers.forEach(u=>{
+        const userEl = document.createElement('div'); userEl.className='flex items-center space-x-2 p-2 bg-white/5 rounded cursor-pointer hover:bg-white/10';
+        userEl.onclick = ()=> showUserProfile(u.username);
+        const statusIcon = u.username===ADMIN_USERNAME ? '👑' : u.isPremium? '⭐' : '🟢';
+        userEl.innerHTML = `<span>${statusIcon}</span><span class="text-white text-sm flex-1 clickable-username">${u.username}${u.username===ADMIN_USERNAME?' [ADMIN]':''}</span>`;
+        list.appendChild(userEl);
+      });
+    }
+
+    // admin panel wiring
+    $('admin-panel-btn').addEventListener('click', ()=>{ $('admin-panel-modal').classList.remove('hidden'); updateAdminStats(); renderUsersList(); });
+    $('close-admin-panel-btn').addEventListener('click', ()=>{ $('admin-panel-modal').classList.add('hidden'); });
+    $('tab-users').addEventListener('click', ()=> switchAdminTab('users'));
+    $('tab-create-user').addEventListener('click', ()=> switchAdminTab('create-user'));
+    $('tab-system').addEventListener('click', ()=> switchAdminTab('system'));
+    function switchAdminTab(tab){
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+      document.querySelectorAll('[id^="tab-"]').forEach(btn=>{ btn.classList.remove('text-yellow-300','border-yellow-300'); btn.classList.add('text-white/70'); });
+      document.getElementById(tab+'-tab').classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-'+tab); activeBtn.classList.add('text-yellow-300','border-b-2','border-yellow-300'); activeBtn.classList.remove('text-white/70');
+    }
+    $('admin-create-btn').addEventListener('click', async ()=>{
+      const username = $('admin-create-username').value.trim();
+      const email = $('admin-create-email').value.trim();
+      const pwd = $('admin-create-password').value;
+      const role = $('admin-create-role').value;
+      if (!username || !email || !pwd){ toast('Vui lòng nhập đầy đủ','error'); return; }
+      if (users.find(x=>x.username===username)){ toast('Tên đã tồn tại','error'); return; }
+      const newUser = { username, email, password:pwd, isPremium: role==='premium', isBanned:false, dailyUsage:0, lastSeen:nowISO(), registrationDate:nowISO() };
+      users.push(newUser); save(KEY_USERS, users); toast('Tạo tài khoản thành công','success');
+      updateAdminStats(); renderUsersList();
+      $('admin-create-username').value=''; $('admin-create-email').value=''; $('admin-create-password').value='';
+    });
+    $('refresh-data-btn').addEventListener('click', ()=>{ updateAdminStats(); renderUsersList(); renderActivityLog(); toast('Đã làm mới dữ liệu','success'); });
+    $('export-data-btn').addEventListener('click', exportData);
+    $('search-users').addEventListener('input', renderUsersList);
+
+    // clear logs admin
+    $('clear-logs-btn')?.addEventListener('click', async ()=>{
+      if (!currentUser || !currentUser.isAdmin) return;
+      if (!confirm('Bạn có chắc muốn xóa tất cả logs?')) return;
+      activityLogs = []; save('activity_logs', activityLogs); toast('Đã xóa logs','success'); renderActivityLog();
+    });
+
+    // render activity log
+    function renderActivityLog(){ /* simplified: not implemented long list UI here */ }
+
+    // ------------- Routing & Auto-login -------------
+    function attemptAutoLogin(){
+      users = load(KEY_USERS, []);
+      const saved = localStorage.getItem(KEY_LOGIN_USER);
+      if (saved){
+        const u = users.find(x=>x.username===saved);
+        if (u){ currentUser = u; showMainApp(); return true; }
+      }
+      return false;
+    }
+
+    window.addEventListener('popstate', ()=> routeHandler());
+    function routeHandler(){
+      const parts = parseRoute();
+      const urlParams = new URLSearchParams(location.search);
+      const reset_token = urlParams.get('reset_token');
+      const reset_user = urlParams.get('username');
+      if (reset_token && reset_user){
+        const stored = localStorage.getItem(`reset_token_${reset_user}`);
+        if (stored && stored === reset_token){
+          const np = prompt('Nhập mật khẩu mới cho ' + reset_user);
+          if (np){ users = load(KEY_USERS, []); const u = users.find(x=>x.username===reset_user); if (u){ u.password=np; save(KEY_USERS, users); localStorage.removeItem(`reset_token_${reset_user}`); currentUser = u; localStorage.setItem(KEY_LOGIN_USER, reset_user); showMainApp(); toast('Đổi mật khẩu thành công','success'); return; } }
+        } else { toast('Link khôi phục không hợp lệ','error'); }
+      }
+      if (!parts || parts.length===0 || (parts.length===1 && parts[0]==='')){ if (currentUser) showMainApp(); else showLoginModal(); return; }
+      const head = parts[0].toLowerCase();
+      if (head==='login'){ showLoginModal(); return; }
+      if (head==='register'){ loginForm.classList.add('hidden'); registerForm.classList.remove('hidden'); replaceURL('register'); return; }
+      if (head==='nick' && parts.length>=2){ const nm = decodeURIComponent(parts[1]); // navigate to nick
+        // If current user matches, show main app and highlight
+        if (currentUser && currentUser.username===nm){ showMainApp(); } else { // try to auto-login user if exists
+          users = load(KEY_USERS, []); const u = users.find(x=>x.username===nm); if (u){ currentUser = u; localStorage.setItem(KEY_LOGIN_USER, nm); showMainApp(); } else { toast('Không tìm thấy tài khoản','error'); showLoginModal(); } }
+        return;
+      }
+      if (currentUser) showMainApp(); else showLoginModal();
+    }
+
+    // initial load
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initData();
+      // bind UI elements that may be missing earlier
+      $('login-username')?.focus();
+      // wire other buttons that may appear after rebuild
+      // attach remaining listeners (some already attached)
+      // Attempt auto login
+      if (!attemptAutoLogin()) { showLoginModal(); } else { showMainApp(); }
+      setTimeout(()=>routeHandler(), 100);
+    });
+
+    // ------------- Misc utilities -------------
+    // render activity logs (placeholder)
+    function renderActivityLog(){ /* left small for brevity */ }
+
+    // function to show user profile simple modal (used earlier)
+    function showUserProfileSimple(u){ alert(JSON.stringify(u,null,2)); }
+
+    // ensure functions referenced earlier exist to avoid console errors
+    window.dataSdk = { create: async (obj)=>{ // fake create: save to users or messages
+      if (obj.activityId || obj.activityType){ activityLogs.unshift(obj); save('activity_logs', activityLogs); return { isOk:true }; }
+      // fallback
+      return { isOk:true };
+    }, init: async ()=>({isOk:true}), update: async (obj)=>{ // emulate update: find user by username
+      users = load(KEY_USERS, []);
+      const idx = users.findIndex(u=>u.username===obj.username);
+      if (idx>=0){ users[idx]=obj; save(KEY_USERS, users); return { isOk:true }; }
+      return { isOk:false };
+    }, delete: async (obj)=>{ return { isOk:true }; } };
+
+    // helper to save arrays with key or default path
+    function save(key, data){ try { localStorage.setItem(key, JSON.stringify(data)); } catch(e){ console.error(e); } }
+    function load(key, def=[]){ try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); } catch(e){ return def; } }
+
+    // Expose some functions for console dev convenience (for testing, when anti-hack off)
+    window._ltp = { users, chatMessages, emails, saveAll: ()=>{ save(KEY_USERS, users); save(KEY_MSGS, chatMessages); save(KEY_EMAILS, emails); } };
+
+  </script>
+ </body>
+</html>
